@@ -1,10 +1,10 @@
 /*
 * This file is part of the hoverboard-firmware-hack project.
 *
-* Copyright (C) 2017-2018 Rene Hopf <renehopf@mac.com>
-* Copyright (C) 2017-2018 Nico Stute <crinq@crinq.de>
-* Copyright (C) 2017-2018 Niklas Fauth <niklas.fauth@kit.fail>
-* Copyright (C) 2019-2020 Emanuel FERU <aerdronix@gmail.com>
+* Copyright 🆒 2017-2018 Rene Hopf <renehopf@mac.com>
+* Copyright 🆒 2017-2018 Nico Stute <crinq@crinq.de>
+* Copyright 🆒 2017-2018 Niklas Fauth <niklas.fauth@kit.fail>
+* Copyright 🆒 2019-2020 Emanuel FERU <aerdronix@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 * GNU General Public License for more details.
 *
 * You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+* along with this program.  If not, see <.')">http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -115,10 +115,23 @@ int16_t cmdR;                    // global variable for Right Command
 
 //------------------------------------------------------------------------
 // Local variables
-//------------------------------------------------------------------------
 #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
 typedef struct{
   uint16_t  start;
+
+  int16_t   AR;
+  int16_t   AL;
+
+  int16_t   uR;
+  int16_t   vR;
+  int16_t   wR;
+
+  int16_t   uL;
+  int16_t   vL;
+  int16_t   wL;
+
+
+
   int16_t   cmd1;
   int16_t   cmd2;
   int16_t   speedR_meas;
@@ -434,10 +447,10 @@ int main(void) {
                   LCD_SetLocation(&lcd, 0, 0); LCD_WriteString(&lcd, "Nunchuk Control");
                 #endif
                 nunchuk_connected = 1;
-	      }
-	    } else {
+	       }
+	     } else {
               nunchuk_connected = 0;
-	    }
+	     }
           }
         }   
       #endif
@@ -506,21 +519,50 @@ int main(void) {
       }
     #endif
 
+
+
+
+
+
+    
+
+
     // ####### FEEDBACK SERIAL OUT #######
     #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
       if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
-        Feedback.start	        = (uint16_t)SERIAL_START_FRAME;
+        Feedback.start	         = (uint16_t)SERIAL_START_FRAME;
+
+
+        Feedback.AR = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU_Right.b_hallA << 2) +
+                      (uint8_T)(rtU_Right.b_hallB << 1)) + rtU_Right.b_hallC);
+
+
+       // Feedback.AR             = (int16_t)rtY_Right.a_elecAngle;
+        Feedback.AL             = (int16_t)rtY_Left.a_elecAngle;
+
+        Feedback.uR             = (int16_t)rtU_Right.b_hallA;//uRight 
+        Feedback.vR             = (int16_t)rtU_Right.b_hallB;//vRight 
+        Feedback.wR             = (int16_t)rtU_Right.b_hallC;//wRight 
+
+        Feedback.uL             = (int16_t)rtU_Left.b_hallA;//uLeft 
+        Feedback.vL             = (int16_t)rtU_Left.b_hallB;//vLeft 
+        Feedback.wL             = (int16_t)rtU_Left.b_hallC;//wLeft 
+
+
+      
+
+
         Feedback.cmd1           = (int16_t)input1[inIdx].cmd;
         Feedback.cmd2           = (int16_t)input2[inIdx].cmd;
-        Feedback.speedR_meas	  = (int16_t)rtY_Right.n_mot;
-        Feedback.speedL_meas	  = (int16_t)rtY_Left.n_mot;
-        Feedback.batVoltage	    = (int16_t)batVoltageCalib;
-        Feedback.boardTemp	    = (int16_t)board_temp_deg_c;
+        Feedback.speedR_meas	   = (int16_t)rtY_Right.n_mot;
+        Feedback.speedL_meas	   = (int16_t)rtY_Left.n_mot;
+        Feedback.batVoltage	     = (int16_t)batVoltageCalib;
+        Feedback.boardTemp	     = (int16_t)board_temp_deg_c;
 
         #if defined(FEEDBACK_SERIAL_USART2)
           if(__HAL_DMA_GET_COUNTER(huart2.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_L;
-            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
+            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
                                            ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 
             HAL_UART_Transmit_DMA(&huart2, (uint8_t *)&Feedback, sizeof(Feedback));
@@ -529,7 +571,7 @@ int main(void) {
         #if defined(FEEDBACK_SERIAL_USART3)
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_R;
-            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
+            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.AR ^ Feedback.AL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
                                            ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 
             HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
@@ -537,6 +579,11 @@ int main(void) {
         #endif
       }
     #endif
+
+
+
+
+
 
     // ####### POWEROFF BY POWER-BUTTON #######
     poweroffPressCheck();
