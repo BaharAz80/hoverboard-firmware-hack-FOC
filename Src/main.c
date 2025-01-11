@@ -357,7 +357,7 @@ int main(void) {
       #if defined(TANK_STEERING) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_SKATEBOARD) 
         // Tank steering (no mixing)
         cmdL = steer; 
-        cmdR = speed;
+        cmdR = -speed;
       #else 
         // ####### MIXER #######
         mixerFcn(speed << 4, steer << 4, &cmdR, &cmdL);   // This function implements the equations above
