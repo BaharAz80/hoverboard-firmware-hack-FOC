@@ -77,8 +77,8 @@
 #define BAT_CALIB_ADC           1492      // adc-value measured by mainboard (value nr 5 on UART debug output)
 #define BAT_CELLS               10        // battery number of cells. Normal Hoverboard battery: 10s
 #define BAT_LVL2_ENABLE         0         // to beep or not to beep, 1 or 0
-#define BAT_LVL1_ENABLE         1         // to beep or not to beep, 1 or 0
-#define BAT_DEAD_ENABLE         1         // to poweroff or not to poweroff, 1 or 0
+#define BAT_LVL1_ENABLE         0         // to beep or not to beep, 1 or 0
+#define BAT_DEAD_ENABLE         0         // to poweroff or not to poweroff, 1 or 0
 #define BAT_BLINK_INTERVAL      80        // battery led blink interval (80 loops * 5ms ~= 400ms)
 #define BAT_LVL5                (390 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Green blink:  no beep
 #define BAT_LVL4                (380 * BAT_CELLS * BAT_CALIB_ADC) / BAT_CALIB_REAL_VOLTAGE    // Yellow:       no beep
@@ -297,7 +297,7 @@
     #define AUX_INPUT2          3, -1000, 0, 1000, 0  // TYPE, MIN, MID, MAX, DEADBAND. See INPUT FORMAT section
   #else
     #define FLASH_WRITE_KEY     0x1001    // Flash memory writing key. Change this key to ignore the input calibrations from the flash memory and use the ones in config.h
-    #define DEBUG_SERIAL_USART3           // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
+    // #define DEBUG_SERIAL_USART3           // right sensor board cable, disable if I2C (nunchuk or lcd) is used!
   #endif
 
   // #define TANK_STEERING                   // use for tank steering, each input controls each wheel 
@@ -332,7 +332,7 @@
     #define FLASH_WRITE_KEY      0x1002  // Flash memory writing key. Change this key to ignore the input calibrations from the flash memory and use the ones in config.h
   #endif
 
-  // #define TANK_STEERING              // use for tank steering, each input controls each wheel 
+  #define TANK_STEERING              // use for tank steering, each input controls each wheel 
   // #define SUPPORT_BUTTONS_LEFT       // use left sensor board cable for button inputs.  Disable DEBUG_SERIAL_USART2!
   // #define SUPPORT_BUTTONS_RIGHT      // use right sensor board cable for button inputs. Disable DEBUG_SERIAL_USART3!
 #endif
@@ -407,7 +407,7 @@
   #if defined(CONTROL_PPM_RIGHT) && !defined(DUAL_INPUTS)
     #define DEBUG_SERIAL_USART2           // left sensor cable debug
   #elif defined(CONTROL_PPM_LEFT) && !defined(DUAL_INPUTS)
-    #define DEBUG_SERIAL_USART3           // right sensor cable debug
+    // #define DEBUG_SERIAL_USART3           // right sensor cable debug
   #endif
 #endif
 // ############################# END OF VARIANT_PPM SETTINGS ############################
@@ -448,7 +448,7 @@
   #if defined(CONTROL_PWM_RIGHT) && !defined(DUAL_INPUTS)
     #define DEBUG_SERIAL_USART2           // left sensor cable debug
   #elif defined(CONTROL_PWM_LEFT) && !defined(DUAL_INPUTS)
-    #define DEBUG_SERIAL_USART3           // right sensor cable debug
+    // #define DEBUG_SERIAL_USART3           // right sensor cable debug
   #endif
 #endif
 // ############################# END OF VARIANT_PWM SETTINGS ############################
@@ -489,7 +489,7 @@
   #if defined(CONTROL_SERIAL_USART3) && !defined(DUAL_INPUTS)
     #define DEBUG_SERIAL_USART2           // left sensor cable debug
   #elif defined(DEBUG_SERIAL_USART2) && !defined(DUAL_INPUTS)
-    #define DEBUG_SERIAL_USART3           // right sensor cable debug
+    // #define DEBUG_SERIAL_USART3           // right sensor cable debug
   #endif
 #endif
 // ############################# END OF VARIANT_IBUS SETTINGS ############################
@@ -627,7 +627,7 @@
   #ifdef CONTROL_PWM_RIGHT
     #define DEBUG_SERIAL_USART2         // left sensor cable debug
   #else
-    #define DEBUG_SERIAL_USART3         // right sensor cable debug
+    // #define DEBUG_SERIAL_USART3         // right sensor cable debug
   #endif
 #endif
 // ############################# END OF VARIANT_SKATEBOARD SETTINGS ############################
@@ -639,7 +639,7 @@
     defined(FEEDBACK_SERIAL_USART3) || defined(CONTROL_SERIAL_USART3) || defined(DEBUG_SERIAL_USART3) || defined(SIDEBOARD_SERIAL_USART3)
   #define SERIAL_START_FRAME      0xABCD                  // [-] Start frame definition for serial commands
   #define SERIAL_BUFFER_SIZE      64                      // [bytes] Size of Serial Rx buffer. Make sure it is always larger than the structure size
-  #define SERIAL_TIMEOUT          160                     // [-] Serial timeout duration for the received data. 160 ~= 0.8 sec. Calculation: 0.8 sec / 0.005 sec
+  #define SERIAL_TIMEOUT          200                     // [-] Serial timeout duration for the received data. 160 ~= 0.8 sec. Calculation: 0.8 sec / 0.005 sec
 #endif
 #if defined(FEEDBACK_SERIAL_USART2) || defined(CONTROL_SERIAL_USART2) || defined(DEBUG_SERIAL_USART2) || defined(SIDEBOARD_SERIAL_USART2)
   #ifndef USART2_BAUD
