@@ -100,9 +100,9 @@ extern volatile uint16_t pwm_captured_ch2_value;
 #endif
 
 
-//------------------------------------------------------------------------
-// Global variables set here in main.c
-//------------------------------------------------------------------------
+
+  // ========================= Global variables set here in main.c ===========================  
+	 
 uint8_t backwardDrive;
 extern volatile uint32_t buzzerTimer;
 volatile uint32_t main_loop_counter;
@@ -115,22 +115,18 @@ int16_t cmdL;                    // global variable for Left Command
 int16_t cmdR;                    // global variable for Right Command 
 
   // ========================= Global variables to track rotations ===========================  
-//extern volatile uint32_t wheelRotationCounterL; // Counter for left wheel rotations
-//extern volatile uint32_t wheelRotationCounterR; // Counter for right wheel rotations
 
 // New global variables for tracking wheel rotations
 volatile uint32_t wheelRotationCounterL = 0;
 volatile uint32_t wheelRotationCounterR = 0;
 
 //#define PULSE_BYTE_RIGHT_HOVERBOARD 0xFE  // Pulse byte for right hoverboard
-//#define PULSE_BYTE_LEFT_HOVERBOARD 0xFF  // Pulse byte for left hoverboard
+//#define PULSE_BYTE_LEFT_HOVERBOARD 0xFD  // Pulse byte for left hoverboard
 
-#define WHEEL_CIRCUMFERENCE_ENCODER_TICKS 1000  // Assuming 1000 ticks per rotation, adjust based on encoder resolution
+//#define WHEEL_CIRCUMFERENCE_ENCODER_TICKS 1000  // Assuming 1000 ticks per rotation, adjust based on encoder resolution
 
+  // ========================= Local variables ===========================  
 
-//------------------------------------------------------------------------
-// Local variables
-//------------------------------------------------------------------------
 #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
 typedef struct{
     uint16_t  start;               // Start frame for data integrity
@@ -154,8 +150,11 @@ typedef struct{
     int16_t   boardTemp;           // Board temperature
     uint16_t  cmdLed;              // Command for LED control
 
-    uint32_t  rotationsRight;      // Number of rotations for right wheel
-    uint32_t  rotationsLeft;       // Number of rotations for left wheel
+    uint32_t  rightRotations ;      // Number of rotations for right wheel
+    uint32_t  leftRotations ;       // Number of rotations for left wheel
+//	 	 uint32_t  rightRotations_B ;      // Number of rotations for right wheel
+//    uint32_t  leftRotations_B ;       // Number of rotations for left wheel
+
 
     uint16_t  checksum;            // Checksum for data validation
 } SerialFeedback;
@@ -284,6 +283,17 @@ int main(void) {
 
     readCommand();                        // Read Command: input1[inIdx].cmd, input2[inIdx].cmd
     calcAvgSpeed();                       // Calculate average measured speed: speedAvg, speedAvgAbs
+	 	 	 
+	 	 // Count rotations based on hall sensor data
+    if(rtU_Right.b_hallA != rtU_Right.b_hallAPrev) {
+        wheelRotationCounterR += 1; // Increment when hall sensor state changes
+    }
+    rtU_Right.b_hallAPrev = rtU_Right.b_hallA;
+
+    if(rtU_Left.b_hallA != rtU_Left.b_hallAPrev) {
+        wheelRotationCounterL += 1; // Increment when hall sensor state changes
+    }
+    rtU_Left.b_hallAPrev = rtU_Left.b_hallA;
 
     #ifndef VARIANT_TRANSPOTTER
       // ####### MOTOR ENABLING: Only if the initial input is very small (for SAFETY) #######
@@ -297,16 +307,8 @@ int main(void) {
         printf("-- Motors enabled --\r\n");
         #endif
       }
-            // New code to track right hoverboard wheel rotations and send pulses
-	 	 	 	 	 	 	 if (main_loop_counter % 10 == 0) {  // Check every 50ms for simplicity, adjust as needed
-	 	 	 	 	 	 	 	 	 int32_t speedL = rtY_Left.n_mot;
-	 	 	 	 	 	 	 	 	 int32_t speedR = rtY_Right.n_mot;
 
-	 	 	 	 	 	 	 	 	 // Increment counters based on speed
-	 	 	 	 	 	 	 	 	 wheelRotationCounterL += (uint32_t)((speedL * DELAY_IN_MAIN_LOOP) / WHEEL_CIRCUMFERENCE_ENCODER_TICKS);
-	 	 	 	 	 	 	 	 	 wheelRotationCounterR += (uint32_t)((speedR * DELAY_IN_MAIN_LOOP) / WHEEL_CIRCUMFERENCE_ENCODER_TICKS);
 
-	 	 	 	 	 	 	 }
 	 	 	 	 	 	 // New code to track left hoverboard wheel rotations and send pulses
 //            if (main_loop_counter % 10 == 0) {  // Check every 50ms for simplicity, adjust as needed
 //                int32_t speedL = rtY_Left.n_mot;  // Assuming speed is in encoder ticks per second
@@ -596,12 +598,12 @@ int main(void) {
         Feedback.boardTemp	     = (int16_t)board_temp_deg_c;
 	 	 	 	 
         // Fields for wheel rotation counts
-        Feedback.rotationsRight = wheelRotationCounterR;
-        Feedback.rotationsLeft = wheelRotationCounterL;
+        Feedback.rightRotations = wheelRotationCounterR;
+        Feedback.leftRotations = wheelRotationCounterL;
 
         // Reset counters after sending to avoid overflow
-        wheelRotationCounterL = 0;
-        wheelRotationCounterR = 0;	 	 	 	 
+//        wheelRotationCounterL = 0;
+//        wheelRotationCounterR = 0;	 	 	 	 
 	 	 	 	 
         #if defined(FEEDBACK_SERIAL_USART2)
           if(__HAL_DMA_GET_COUNTER(huart2.hdmatx) == 0) {
@@ -616,7 +618,7 @@ int main(void) {
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_R;
             Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.AR ^ Feedback.AL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
-                                           ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed ^ Feedback.rotationsRight ^ Feedback.rotationsLeft);
+                                           ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed ^ Feedback.rightRotations ^ Feedback.leftRotations);
 	 	 	 	 	 	             HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
         #endif

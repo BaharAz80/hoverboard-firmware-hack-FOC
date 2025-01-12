@@ -214,6 +214,8 @@ typedef struct {
   int16_T i_phaBC;                     /* '<Root>/i_phaBC' */
   int16_T i_DCLink;                    /* '<Root>/i_DCLink' */
   int16_T a_mechAngle;                 /* '<Root>/a_mechAngle' */
+
+  uint8_T b_hallAPrev;                     
 } ExtU;
 
 /* External outputs (root outports fed by signals with auto storage) */
