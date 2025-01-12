@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h> // for abs()
+#include <stdint.h>
 #include "stm32f1xx_hal.h"
 #include "defines.h"
 #include "setup.h"
@@ -113,33 +114,50 @@ int16_t dc_curr;                 // global variable for Total DC Link current
 int16_t cmdL;                    // global variable for Left Command 
 int16_t cmdR;                    // global variable for Right Command 
 
+  // ========================= Global variables to track rotations ===========================  
+//extern volatile uint32_t wheelRotationCounterL; // Counter for left wheel rotations
+//extern volatile uint32_t wheelRotationCounterR; // Counter for right wheel rotations
+
+// New global variables for tracking wheel rotations
+volatile uint32_t wheelRotationCounterL = 0;
+volatile uint32_t wheelRotationCounterR = 0;
+
+//#define PULSE_BYTE_RIGHT_HOVERBOARD 0xFE  // Pulse byte for right hoverboard
+//#define PULSE_BYTE_LEFT_HOVERBOARD 0xFF  // Pulse byte for left hoverboard
+
+#define WHEEL_CIRCUMFERENCE_ENCODER_TICKS 1000  // Assuming 1000 ticks per rotation, adjust based on encoder resolution
+
+
 //------------------------------------------------------------------------
 // Local variables
+//------------------------------------------------------------------------
 #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
 typedef struct{
-  uint16_t  start;
+    uint16_t  start;               // Start frame for data integrity
 
-  int16_t   AR;
-  int16_t   AL;
+    int16_t   AR;                  // Right motor angle (electrical)
+    int16_t   AL;                  // Left motor angle (electrical)
 
-  int16_t   uR;
-  int16_t   vR;
-  int16_t   wR;
+    int16_t   uR;                  // Right motor hall sensor U phase
+    int16_t   vR;                  // Right motor hall sensor V phase
+    int16_t   wR;                  // Right motor hall sensor W phase
 
-  int16_t   uL;
-  int16_t   vL;
-  int16_t   wL;
+    int16_t   uL;                  // Left motor hall sensor U phase
+    int16_t   vL;                  // Left motor hall sensor V phase
+    int16_t   wL;                  // Left motor hall sensor W phase
 
+    int16_t   cmd1;                // Command 1 received
+    int16_t   cmd2;                // Command 2 received
+    int16_t   speedR_meas;         // Measured speed of right motor
+    int16_t   speedL_meas;         // Measured speed of left motor
+    int16_t   batVoltage;          // Battery voltage
+    int16_t   boardTemp;           // Board temperature
+    uint16_t  cmdLed;              // Command for LED control
 
+    uint32_t  rotationsRight;      // Number of rotations for right wheel
+    uint32_t  rotationsLeft;       // Number of rotations for left wheel
 
-  int16_t   cmd1;
-  int16_t   cmd2;
-  int16_t   speedR_meas;
-  int16_t   speedL_meas;
-  int16_t   batVoltage;
-  int16_t   boardTemp;
-  uint16_t  cmdLed;
-  uint16_t  checksum;
+    uint16_t  checksum;            // Checksum for data validation
 } SerialFeedback;
 static SerialFeedback Feedback;
 #endif
@@ -279,7 +297,38 @@ int main(void) {
         printf("-- Motors enabled --\r\n");
         #endif
       }
+            // New code to track right hoverboard wheel rotations and send pulses
+	 	 	 	 	 	 	 if (main_loop_counter % 10 == 0) {  // Check every 50ms for simplicity, adjust as needed
+	 	 	 	 	 	 	 	 	 int32_t speedL = rtY_Left.n_mot;
+	 	 	 	 	 	 	 	 	 int32_t speedR = rtY_Right.n_mot;
 
+	 	 	 	 	 	 	 	 	 // Increment counters based on speed
+	 	 	 	 	 	 	 	 	 wheelRotationCounterL += (uint32_t)((speedL * DELAY_IN_MAIN_LOOP) / WHEEL_CIRCUMFERENCE_ENCODER_TICKS);
+	 	 	 	 	 	 	 	 	 wheelRotationCounterR += (uint32_t)((speedR * DELAY_IN_MAIN_LOOP) / WHEEL_CIRCUMFERENCE_ENCODER_TICKS);
+
+	 	 	 	 	 	 	 }
+	 	 	 	 	 	 // New code to track left hoverboard wheel rotations and send pulses
+//            if (main_loop_counter % 10 == 0) {  // Check every 50ms for simplicity, adjust as needed
+//                int32_t speedL = rtY_Left.n_mot;  // Assuming speed is in encoder ticks per second
+//                int32_t speedR = rtY_Right.n_mot;
+
+//                // Increment counters if a full rotation has occurred
+//                wheelRotationCounterL += (uint32_t)((speedL * DELAY_IN_MAIN_LOOP) / WHEEL_CIRCUMFERENCE_ENCODER_TICKS);
+//                wheelRotationCounterR += (uint32_t)((speedR * DELAY_IN_MAIN_LOOP) / WHEEL_CIRCUMFERENCE_ENCODER_TICKS);
+
+//                // Send pulse if a full rotation is detected
+//                if (wheelRotationCounterL >= 1) {
+//                    uint8_t pulse = PULSE_BYTE_LEFT_HOVERBOARD;
+//                    HAL_UART_Transmit(&huart3, &pulse, 1, 10);
+//                    wheelRotationCounterL = 0; // Reset counter
+//                }
+//                if (wheelRotationCounterR >= 1) {
+//                    uint8_t pulse = PULSE_BYTE_LEFT_HOVERBOARD;
+//                    HAL_UART_Transmit(&huart3, &pulse, 1, 10);
+//                    wheelRotationCounterR = 0; // Reset counter
+//                }
+//	 	 	 	 	 	 	 	 
+//            }
       // ####### VARIANT_HOVERCAR #######
       #if defined(VARIANT_HOVERCAR) || defined(VARIANT_SKATEBOARD) || defined(ELECTRIC_BRAKE_ENABLE)
         uint16_t speedBlend;                                        // Calculate speed Blend, a number between [0, 1] in fixdt(0,16,15)
@@ -357,7 +406,7 @@ int main(void) {
       #if defined(TANK_STEERING) && !defined(VARIANT_HOVERCAR) && !defined(VARIANT_SKATEBOARD) 
         // Tank steering (no mixing)
         cmdL = steer; 
-        cmdR = -speed;
+        cmdR = speed; // If it becomes negative(-), Wheels turn in the opposite direction
       #else 
         // ####### MIXER #######
         mixerFcn(speed << 4, steer << 4, &cmdR, &cmdL);   // This function implements the equations above
@@ -520,45 +569,40 @@ int main(void) {
     #endif
 
 
-
-
-
-
-    
-
-
     // ####### FEEDBACK SERIAL OUT #######
     #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
       if (main_loop_counter % 2 == 0) {    // Send data periodically every 10 ms
+	 	 	 	 
         Feedback.start	         = (uint16_t)SERIAL_START_FRAME;
 
+        //Feedback.AR = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU_Right.b_hallA << 2) + (uint8_T)(rtU_Right.b_hallB << 1)) + rtU_Right.b_hallC);
 
-        Feedback.AR = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU_Right.b_hallA << 2) +
-                      (uint8_T)(rtU_Right.b_hallB << 1)) + rtU_Right.b_hallC);
-
-
-       // Feedback.AR             = (int16_t)rtY_Right.a_elecAngle;
+        Feedback.AR             = (int16_t)rtY_Right.a_elecAngle;
         Feedback.AL             = (int16_t)rtY_Left.a_elecAngle;
 
-        Feedback.uR             = (int16_t)rtU_Right.b_hallA;//uRight 
-        Feedback.vR             = (int16_t)rtU_Right.b_hallB;//vRight 
-        Feedback.wR             = (int16_t)rtU_Right.b_hallC;//wRight 
+        Feedback.uR             = (int16_t)rtU_Right.b_hallA; // uRight 
+        Feedback.vR             = (int16_t)rtU_Right.b_hallB; // vRight 
+        Feedback.wR             = (int16_t)rtU_Right.b_hallC; // wRight 
 
-        Feedback.uL             = (int16_t)rtU_Left.b_hallA;//uLeft 
-        Feedback.vL             = (int16_t)rtU_Left.b_hallB;//vLeft 
-        Feedback.wL             = (int16_t)rtU_Left.b_hallC;//wLeft 
-
-
-      
-
-
+        Feedback.uL             = (int16_t)rtU_Left.b_hallA; // uLeft 
+        Feedback.vL             = (int16_t)rtU_Left.b_hallB; // vLeft 
+        Feedback.wL             = (int16_t)rtU_Left.b_hallC; // wLeft 
+    
         Feedback.cmd1           = (int16_t)input1[inIdx].cmd;
         Feedback.cmd2           = (int16_t)input2[inIdx].cmd;
         Feedback.speedR_meas	   = (int16_t)rtY_Right.n_mot;
         Feedback.speedL_meas	   = (int16_t)rtY_Left.n_mot;
         Feedback.batVoltage	     = (int16_t)batVoltageCalib;
         Feedback.boardTemp	     = (int16_t)board_temp_deg_c;
+	 	 	 	 
+        // Fields for wheel rotation counts
+        Feedback.rotationsRight = wheelRotationCounterR;
+        Feedback.rotationsLeft = wheelRotationCounterL;
 
+        // Reset counters after sending to avoid overflow
+        wheelRotationCounterL = 0;
+        wheelRotationCounterR = 0;	 	 	 	 
+	 	 	 	 
         #if defined(FEEDBACK_SERIAL_USART2)
           if(__HAL_DMA_GET_COUNTER(huart2.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_L;
@@ -572,17 +616,12 @@ int main(void) {
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_R;
             Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.AR ^ Feedback.AL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
-                                           ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
-
-            HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
+                                           ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed ^ Feedback.rotationsRight ^ Feedback.rotationsLeft);
+	 	 	 	 	 	             HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
         #endif
       }
     #endif
-
-
-
-
 
 
     // ####### POWEROFF BY POWER-BUTTON #######
@@ -656,15 +695,13 @@ int main(void) {
 
 
 // ===========================================================
-/** System Clock Configuration
-*/
+/** System Clock Configuration */
 void SystemClock_Config(void) {
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
-  /**Initializes the CPU, AHB and APB busses clocks
-    */
+  /** Initializes the CPU, AHB and APB busses clocks **/
   RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState            = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = 16;
@@ -673,8 +710,7 @@ void SystemClock_Config(void) {
   RCC_OscInitStruct.PLL.PLLMUL          = RCC_PLL_MUL16;
   HAL_RCC_OscConfig(&RCC_OscInitStruct);
 
-  /**Initializes the CPU, AHB and APB busses clocks
-    */
+  /** Initializes the CPU, AHB and APB busses clocks **/
   RCC_ClkInitStruct.ClockType           = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource        = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider       = RCC_SYSCLK_DIV1;
