@@ -121,9 +121,6 @@ int16_t cmdR;                    // global variable for Right Command
 typedef struct{
     uint16_t  start;               // Start frame for data integrity
 
-	  int16_t   MAR;                  // Right motor angle (Mechanical)
-    int16_t   MAL;                  // Left motor angle (Mechanical)
-	
     int16_t   EAR;                  // Right motor angle (electrical)
     int16_t   EAL;                  // Left motor angle (electrical)
 
@@ -530,9 +527,6 @@ int main(void) {
 				
         Feedback.start	        = (uint16_t)SERIAL_START_FRAME;
 
-        Feedback.MAR             = (int16_t)rtY_Right.a_mechAngle;
-        Feedback.MAL             = (int16_t)rtU_Left.a_mechAngle;
-
         Feedback.EAR             = (int16_t)rtY_Right.a_elecAngle;
         Feedback.EAL             = (int16_t)rtY_Left.a_elecAngle;
 
@@ -564,7 +558,7 @@ int main(void) {
         #if defined(FEEDBACK_SERIAL_USART3)
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_R;
-            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.MAR ^ Feedback.MAL ^ Feedback.EAR ^ Feedback.EAL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
+            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.EAR ^ Feedback.EAL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
                                            ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 						            HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
