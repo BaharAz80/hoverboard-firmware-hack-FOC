@@ -118,7 +118,7 @@ int16_t cmdR;                    // global variable for Right Command
 
 #define WHEEL_CIRCUMFERENCE 0.52f // Example value in meters
 
- New global variables for tracking wheel rotations
+//  New global variables for tracking wheel rotations
 volatile uint32_t wheelRotationCounterL = 0;
 volatile uint32_t wheelRotationCounterR = 0;
 
