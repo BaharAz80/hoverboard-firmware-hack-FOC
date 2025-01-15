@@ -26,6 +26,9 @@
 #include "stm32f1xx_hal.h"
 #include "config.h"
 
+extern volatile uint32_t wheelRotationCounterL;
+extern volatile uint32_t wheelRotationCounterR;
+
 #define LEFT_HALL_U_PIN GPIO_PIN_5
 #define LEFT_HALL_V_PIN GPIO_PIN_6
 #define LEFT_HALL_W_PIN GPIO_PIN_7
