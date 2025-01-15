@@ -114,33 +114,26 @@ int16_t dc_curr;                 // global variable for Total DC Link current
 int16_t cmdL;                    // global variable for Left Command 
 int16_t cmdR;                    // global variable for Right Command 
 
-  // ========================= Global variables to track rotations ===========================  
-
-#define WHEEL_CIRCUMFERENCE 0.52f // Example value in meters
-
-//  New global variables for tracking wheel rotations
-volatile uint32_t wheelRotationCounterL = 0;
-volatile uint32_t wheelRotationCounterR = 0;
-
-float distanceTraveled = 0.0f;
 
   // ========================= Local variables ===========================  
 
 #if defined(FEEDBACK_SERIAL_USART2) || defined(FEEDBACK_SERIAL_USART3)
 typedef struct{
     uint16_t  start;               // Start frame for data integrity
+
+	  int16_t   MAR;                  // Right motor angle (Mechanical)
+    int16_t   MAL;                  // Left motor angle (Mechanical)
 	
-    int16_t   AR2;                  // Right motor angle (electrical)
-    int16_t   AR;                  // Right motor angle (electrical)
-    int16_t   AL;                  // Left motor angle (electrical)
+    int16_t   EAR;                  // Right motor angle (electrical)
+    int16_t   EAL;                  // Left motor angle (electrical)
 
-		int16_t   uR;                  // Right Wheel - Hall Sensor A
-		int16_t   vR;                  // Right Wheel - Hall Sensor B
-		int16_t   wR;                  // Right Wheel - Hall Sensor C
+    int16_t   uR;                  // Right motor hall sensor U phase
+    int16_t   vR;                  // Right motor hall sensor V phase
+    int16_t   wR;                  // Right motor hall sensor W phase
 
-    int16_t   uL;                  // Left Wheel - Hall Sensor A
-    int16_t   vL;                  // Left Wheel - Hall Sensor B
-    int16_t   wL;                  // Left Wheel - Hall Sensor C
+    int16_t   uL;                  // Left motor hall sensor U phase
+    int16_t   vL;                  // Left motor hall sensor V phase
+    int16_t   wL;                  // Left motor hall sensor W phase
 
     int16_t   cmd1;                // Command 1 received
     int16_t   cmd2;                // Command 2 received
@@ -149,9 +142,6 @@ typedef struct{
     int16_t   batVoltage;          // Battery voltage
     int16_t   boardTemp;           // Board temperature
     uint16_t  cmdLed;              // Command for LED control
-
-		uint32_t leftRotations;
-		uint32_t rightRotations;
 
     uint16_t  checksum;            // Checksum for data validation
 } SerialFeedback;
@@ -281,24 +271,6 @@ int main(void) {
     readCommand();                        // Read Command: input1[inIdx].cmd, input2[inIdx].cmd
     calcAvgSpeed();                       // Calculate average measured speed: speedAvg, speedAvgAbs
 			
-
-      // Calculate wheel rotations
-      static uint8_t prevHallL = 0, prevHallR = 0;
-      uint8_t currentHallL = (uint8_t)((rtU_Left.b_hallA << 2) | (rtU_Left.b_hallB << 1) | rtU_Left.b_hallC);
-      uint8_t currentHallR = (uint8_t)((rtU_Right.b_hallA << 2) | (rtU_Right.b_hallB << 1) | rtU_Right.b_hallC);
-
-      if (prevHallL != currentHallL) {
-          wheelRotationCounterL++;
-          prevHallL = currentHallL;
-      }
-      if (prevHallR != currentHallR) {
-          wheelRotationCounterR++;
-          prevHallR = currentHallR;
-      }
-
-      // Calculate distance traveled
-      distanceTraveled = (wheelRotationCounterL / 6.0f + wheelRotationCounterR / 6.0f) * WHEEL_CIRCUMFERENCE / 2.0f;
-
     #ifndef VARIANT_TRANSPOTTER
       // ####### MOTOR ENABLING: Only if the initial input is very small (for SAFETY) #######
       if (enable == 0 && !rtY_Left.z_errCode && !rtY_Right.z_errCode && 
@@ -312,7 +284,6 @@ int main(void) {
         #endif
       }
 
-				
       // ####### VARIANT_HOVERCAR #######
       #if defined(VARIANT_HOVERCAR) || defined(VARIANT_SKATEBOARD) || defined(ELECTRIC_BRAKE_ENABLE)
         uint16_t speedBlend;                                        // Calculate speed Blend, a number between [0, 1] in fixdt(0,16,15)
@@ -559,18 +530,19 @@ int main(void) {
 				
         Feedback.start	        = (uint16_t)SERIAL_START_FRAME;
 
-        Feedback.AR2 = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU_Right.b_hallA << 2) + (uint8_T)(rtU_Right.b_hallB << 1)) + rtU_Right.b_hallC);
+        Feedback.MAR             = (int16_t)rtY_Right.a_mechAngle;
+        Feedback.MAL             = (int16_t)rtU_Left.a_mechAngle;
 
-        Feedback.AR             = (int16_t)rtY_Right.a_elecAngle; // Right motor angle (electrical)
-        Feedback.AL             = (int16_t)rtY_Left.a_elecAngle; // Left motor angle (electrical)
+        Feedback.EAR             = (int16_t)rtY_Right.a_elecAngle;
+        Feedback.EAL             = (int16_t)rtY_Left.a_elecAngle;
 
-        Feedback.uR             = (int16_t)rtU_Right.b_hallA; // Right Wheel - Hall Sensor A (u Phase)
-        Feedback.vR             = (int16_t)rtU_Right.b_hallB; // Right Wheel - Hall Sensor B (v Phase)
-        Feedback.wR             = (int16_t)rtU_Right.b_hallC; // Right Wheel - Hall Sensor C (w Phase)
+        Feedback.uR             = (int16_t)rtU_Right.b_hallA; // uRight 
+        Feedback.vR             = (int16_t)rtU_Right.b_hallB; // vRight 
+        Feedback.wR             = (int16_t)rtU_Right.b_hallC; // wRight 
 
-        Feedback.uL             = (int16_t)rtU_Left.b_hallA; // Left Wheel - Hall Sensor A (u Phase)
-        Feedback.vL             = (int16_t)rtU_Left.b_hallB; // Left Wheel - Hall Sensor B (v Phase)
-        Feedback.wL             = (int16_t)rtU_Left.b_hallC; // Left Wheel - Hall Sensor C (w Phase)
+        Feedback.uL             = (int16_t)rtU_Left.b_hallA; // uLeft 
+        Feedback.vL             = (int16_t)rtU_Left.b_hallB; // vLeft 
+        Feedback.wL             = (int16_t)rtU_Left.b_hallC; // wLeft 
     
         Feedback.cmd1           = (int16_t)input1[inIdx].cmd;
         Feedback.cmd2           = (int16_t)input2[inIdx].cmd;
@@ -578,10 +550,8 @@ int main(void) {
         Feedback.speedL_meas	  = (int16_t)rtY_Left.n_mot;
         Feedback.batVoltage	    = (int16_t)batVoltageCalib;
         Feedback.boardTemp	    = (int16_t)board_temp_deg_c;
-
-				Feedback.leftRotations = wheelRotationCounterL;
-				Feedback.rightRotations = wheelRotationCounterR;
-
+				
+			
         #if defined(FEEDBACK_SERIAL_USART2)
           if(__HAL_DMA_GET_COUNTER(huart2.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_L;
@@ -594,8 +564,8 @@ int main(void) {
         #if defined(FEEDBACK_SERIAL_USART3)
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_R;
-            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.AR ^ Feedback.AL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
-                                           ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed ^ Feedback.rightRotations ^ Feedback.leftRotations);
+            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.MAR ^ Feedback.MAL ^ Feedback.EAR ^ Feedback.EAL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
+                                           ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 						            HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
         #endif
@@ -674,7 +644,7 @@ int main(void) {
 
 
 // ===========================================================
-/** System Clock Configuration **/
+/** System Clock Configuration */
 void SystemClock_Config(void) {
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
@@ -703,12 +673,14 @@ void SystemClock_Config(void) {
   PeriphClkInit.AdcClockSelection       = RCC_ADCPCLK2_DIV4;  // 16 MHz
   HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
 
-  /**Configure the Systick interrupt time **/
+  /**Configure the Systick interrupt time
+    */
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
 
-  /**Configure the Systick */
+  /**Configure the Systick
+    */
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
-  /* SysTick_IRQn interrupt configuration **/
+  /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }

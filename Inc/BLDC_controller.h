@@ -157,10 +157,6 @@ typedef struct {
   boolean_T UnitDelay1_DSTATE_n;       /* '<S17>/UnitDelay1' */
   boolean_T n_commDeacv_Mode;          /* '<S13>/n_commDeacv' */
   boolean_T dz_cntTrnsDet_Mode;        /* '<S17>/dz_cntTrnsDet' */
-	
-	uint32_T wheelRotationCounterL;
-  uint32_T wheelRotationCounterR;
-		
 } DW;
 
 /* Constant parameters (auto storage) */
@@ -230,6 +226,7 @@ typedef struct {
   int16_T a_elecAngle;                 /* '<Root>/a_elecAngle' */
   int16_T iq;                          /* '<Root>/iq' */
   int16_T id;                          /* '<Root>/id' */
+	int16_T a_mechAngle;                 /* '<Root>/a_mechAngle' */
 } ExtY;
 
 /* Parameters (auto storage) */

@@ -93,8 +93,6 @@ preprocessor word size checks.
 #endif
 #endif
 
-
-
 uint8_T plook_u8s16_evencka(int16_T u, int16_T bp0, uint16_T bpSpace, uint32_T
   maxIndex);
 uint8_T plook_u8u16_evencka(uint16_T u, uint16_T bp0, uint16_T bpSpace, uint32_T
@@ -1034,20 +1032,6 @@ void BLDC_controller_step(RT_MODEL *const rtM)
   int16_T tmp[4];
   int8_T UnitDelay3;
 
-  // Count wheel rotations
-  static uint8_T prevHallL = 0, prevHallR = 0;
-  uint8_T currentHallL = (uint8_T)((rtU->b_hallA << 2) | (rtU->b_hallB << 1) | rtU->b_hallC);
-  uint8_T currentHallR = (uint8_T)((rtU->b_hallA << 2) | (rtU->b_hallB << 1) | rtU->b_hallC);
-
-  if (prevHallL != currentHallL) {
-      rtDW->wheelRotationCounterL++;
-      prevHallL = currentHallL;
-  }
-  if (prevHallR != currentHallR) {
-      rtDW->wheelRotationCounterR++;
-      prevHallR = currentHallR;
-  }
-
   /* Outputs for Atomic SubSystem: '<Root>/BLDC_controller' */
   /* Sum: '<S11>/Sum' incorporates:
    *  Gain: '<S11>/g_Ha'
@@ -1056,8 +1040,7 @@ void BLDC_controller_step(RT_MODEL *const rtM)
    *  Inport: '<Root>/b_hallB'
    *  Inport: '<Root>/b_hallC'
    */
-  Sum = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU->b_hallA << 2) +
-    (uint8_T)(rtU->b_hallB << 1)) + rtU->b_hallC);
+  Sum = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU->b_hallA << 2) + (uint8_T)(rtU->b_hallB << 1)) + rtU->b_hallC);
 
   /* Logic: '<S10>/Logical Operator' incorporates:
    *  Inport: '<Root>/b_hallA '
@@ -1186,8 +1169,7 @@ void BLDC_controller_step(RT_MODEL *const rtM)
        *  UnitDelay: '<S17>/UnitDelay3'
        *  UnitDelay: '<S17>/UnitDelay5'
        */
-      rtb_Switch1_l = (int16_T)(((uint16_T)(rtP->cf_speedCoef << 2) << 4) /
-        (int16_T)(((rtDW->UnitDelay2_DSTATE + rtDW->UnitDelay3_DSTATE_o) +
+      rtb_Switch1_l = (int16_T)(((uint16_T)(rtP->cf_speedCoef << 2) << 4) / (int16_T)(((rtDW->UnitDelay2_DSTATE + rtDW->UnitDelay3_DSTATE_o) +
                    rtDW->UnitDelay5_DSTATE) + rtDW->z_counterRawPrev));
     }
 
@@ -3383,10 +3365,6 @@ void BLDC_controller_initialize(RT_MODEL *const rtM)
   /* End of SystemInitialize for SubSystem: '<S47>/FOC_Enabled' */
 
   /* End of SystemInitialize for SubSystem: '<Root>/BLDC_controller' */
-	
-	// Initialize wheel rotation counters
-  rtDW->wheelRotationCounterL = 0;
-  rtDW->wheelRotationCounterR = 0;
 }
 
 /*
