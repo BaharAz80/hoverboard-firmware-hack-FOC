@@ -226,6 +226,7 @@ typedef struct {
   int16_T a_elecAngle;                 /* '<Root>/a_elecAngle' */
   int16_T iq;                          /* '<Root>/iq' */
   int16_T id;                          /* '<Root>/id' */
+	int16_T a_mechAngle;                 /* '<Root>/a_mechAngle' */
 } ExtY;
 
 /* Parameters (auto storage) */

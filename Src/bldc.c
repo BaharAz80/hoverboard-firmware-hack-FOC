@@ -178,7 +178,7 @@ void DMA1_Channel1_IRQHandler(void) {
     /* Set motor inputs here */
     rtU_Left.b_motEna     = enableFin;
     rtU_Left.z_ctrlModReq = ctrlModReq;  
-    rtU_Left.r_inpTgt     = pwml;
+    rtU_Left.r_inpTgt     = -pwml;
     rtU_Left.b_hallA      = hall_ul;
     rtU_Left.b_hallB      = hall_vl;
     rtU_Left.b_hallC      = hall_wl;
@@ -186,7 +186,7 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Left.i_phaBC      = curL_phaB;
     rtU_Left.i_DCLink     = curL_DC;
     // rtU_Left.a_mechAngle   = ...; // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
-    
+    rtU_Left.a_mechAngle = (int16_t)(EAL << 4) ;
     /* Step the controller */
     #ifdef MOTOR_LEFT_ENA    
     BLDC_controller_step(rtM_Left);
@@ -216,7 +216,7 @@ void DMA1_Channel1_IRQHandler(void) {
     /* Set motor inputs here */
     rtU_Right.b_motEna      = enableFin;
     rtU_Right.z_ctrlModReq  = ctrlModReq;
-    rtU_Right.r_inpTgt      = pwmr;
+    rtU_Right.r_inpTgt      = pwmr; // it should be negative(-) for left wheels move correct
     rtU_Right.b_hallA       = hall_ur;
     rtU_Right.b_hallB       = hall_vr;
     rtU_Right.b_hallC       = hall_wr;
@@ -224,7 +224,7 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Right.i_phaBC       = curR_phaC;
     rtU_Right.i_DCLink      = curR_DC;
     // rtU_Right.a_mechAngle   = ...; // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
-    
+    rtU_Right.a_mechAngle = (int16_t)(EAR << 4) ;
     /* Step the controller */
     #ifdef MOTOR_RIGHT_ENA
     BLDC_controller_step(rtM_Right);
