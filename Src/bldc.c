@@ -186,7 +186,7 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Left.i_phaBC      = curL_phaB;
     rtU_Left.i_DCLink     = curL_DC;
     // rtU_Left.a_mechAngle   = ...; // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
-    motAngleLeft = rtY_Left.a_elecAngle;
+    int motAngleLeft = rtY_Left.a_elecAngle;
     rtU_Left.a_mechAngle = (int16_t)( motAngleLeft  << 4) ;
     /* Step the controller */
     #ifdef MOTOR_LEFT_ENA    
@@ -225,7 +225,7 @@ void DMA1_Channel1_IRQHandler(void) {
     rtU_Right.i_phaBC       = curR_phaC;
     rtU_Right.i_DCLink      = curR_DC;
     // rtU_Right.a_mechAngle   = ...; // Angle input in DEGREES [0,360] in fixdt(1,16,4) data type. If `angle` is float use `= (int16_t)floor(angle * 16.0F)` If `angle` is integer use `= (int16_t)(angle << 4)`
-    motAngleRight = rtY_Right.a_elecAngle;
+    int motAngleRight = rtY_Right.a_elecAngle;
     rtU_Right.a_mechAngle = (int16_t)( motAngleRight   << 4) ;
     /* Step the controller */
     #ifdef MOTOR_RIGHT_ENA
