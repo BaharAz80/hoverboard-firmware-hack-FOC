@@ -1040,8 +1040,7 @@ void BLDC_controller_step(RT_MODEL *const rtM)
    *  Inport: '<Root>/b_hallB'
    *  Inport: '<Root>/b_hallC'
    */
-  Sum = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU->b_hallA << 2) +
-    (uint8_T)(rtU->b_hallB << 1)) + rtU->b_hallC);
+  Sum = (uint8_T)((uint32_T)(uint8_T)((uint32_T)(uint8_T)(rtU->b_hallA << 2) + (uint8_T)(rtU->b_hallB << 1)) + rtU->b_hallC);
 
   /* Logic: '<S10>/Logical Operator' incorporates:
    *  Inport: '<Root>/b_hallA '
@@ -1170,8 +1169,7 @@ void BLDC_controller_step(RT_MODEL *const rtM)
        *  UnitDelay: '<S17>/UnitDelay3'
        *  UnitDelay: '<S17>/UnitDelay5'
        */
-      rtb_Switch1_l = (int16_T)(((uint16_T)(rtP->cf_speedCoef << 2) << 4) /
-        (int16_T)(((rtDW->UnitDelay2_DSTATE + rtDW->UnitDelay3_DSTATE_o) +
+      rtb_Switch1_l = (int16_T)(((uint16_T)(rtP->cf_speedCoef << 2) << 4) / (int16_T)(((rtDW->UnitDelay2_DSTATE + rtDW->UnitDelay3_DSTATE_o) +
                    rtDW->UnitDelay5_DSTATE) + rtDW->z_counterRawPrev));
     }
 
