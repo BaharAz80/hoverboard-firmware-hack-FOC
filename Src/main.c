@@ -121,16 +121,13 @@ int16_t cmdR;                    // global variable for Right Command
 typedef struct{
     uint16_t  start;               // Start frame for data integrity
 
-    int16_t   EAR;                  // Right motor angle (electrical)
-    int16_t   EAL;                  // Left motor angle (electrical)
+    int16_t   uR_A;                  // Right motor hall sensor U phase
+    int16_t   vR_A;                  // Right motor hall sensor V phase
+    int16_t   wR_A;                  // Right motor hall sensor W phase
 
-    int16_t   uR;                  // Right motor hall sensor U phase
-    int16_t   vR;                  // Right motor hall sensor V phase
-    int16_t   wR;                  // Right motor hall sensor W phase
-
-    int16_t   uL;                  // Left motor hall sensor U phase
-    int16_t   vL;                  // Left motor hall sensor V phase
-    int16_t   wL;                  // Left motor hall sensor W phase
+    int16_t   uL_A;                  // Left motor hall sensor U phase
+    int16_t   vL_A;                  // Left motor hall sensor V phase
+    int16_t   wL_A;                  // Left motor hall sensor W phase
 
     int16_t   cmd1;                // Command 1 received
     int16_t   cmd2;                // Command 2 received
@@ -527,16 +524,13 @@ int main(void) {
 				
         Feedback.start	        = (uint16_t)SERIAL_START_FRAME;
 
-        Feedback.EAR             = (int16_t)rtY_Right.a_elecAngle;
-        Feedback.EAL             = (int16_t)rtY_Left.a_elecAngle;
+        Feedback.uR_A             = (int16_t)rtU_Right.b_hallA; // uRight 
+        Feedback.vR_A             = (int16_t)rtU_Right.b_hallB; // vRight 
+        Feedback.wR_A            = (int16_t)rtU_Right.b_hallC; // wRight 
 
-        Feedback.uR             = (int16_t)rtU_Right.b_hallA; // uRight 
-        Feedback.vR             = (int16_t)rtU_Right.b_hallB; // vRight 
-        Feedback.wR             = (int16_t)rtU_Right.b_hallC; // wRight 
-
-        Feedback.uL             = (int16_t)rtU_Left.b_hallA; // uLeft 
-        Feedback.vL             = (int16_t)rtU_Left.b_hallB; // vLeft 
-        Feedback.wL             = (int16_t)rtU_Left.b_hallC; // wLeft 
+        Feedback.uL_A             = (int16_t)rtU_Left.b_hallA; // uLeft 
+        Feedback.vL_A             = (int16_t)rtU_Left.b_hallB; // vLeft 
+        Feedback.wL_A             = (int16_t)rtU_Left.b_hallC; // wLeft 
     
         Feedback.cmd1           = (int16_t)input1[inIdx].cmd;
         Feedback.cmd2           = (int16_t)input2[inIdx].cmd;
@@ -558,7 +552,7 @@ int main(void) {
         #if defined(FEEDBACK_SERIAL_USART3)
           if(__HAL_DMA_GET_COUNTER(huart3.hdmatx) == 0) {
             Feedback.cmdLed     = (uint16_t)sideboard_leds_R;
-            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.EAR ^ Feedback.EAL ^ Feedback.uR ^ Feedback.vR ^ Feedback.wR ^ Feedback.uL ^ Feedback.vL ^ Feedback.wL ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
+            Feedback.checksum   = (uint16_t)(Feedback.start ^ Feedback.uR_A ^ Feedback.vR_A ^ Feedback.wR_A ^ Feedback.uL_A ^ Feedback.vL_A ^ Feedback.wL_A ^ Feedback.cmd1 ^ Feedback.cmd2 ^ Feedback.speedR_meas ^ Feedback.speedL_meas 
                                            ^ Feedback.batVoltage ^ Feedback.boardTemp ^ Feedback.cmdLed);
 						            HAL_UART_Transmit_DMA(&huart3, (uint8_t *)&Feedback, sizeof(Feedback));
           }
